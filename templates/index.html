@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simulador de Força Bruta - DPO</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body { background-color: #f4f7f6; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        .card { border: none; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); transition: transform 0.3s; }
+        .card:hover { transform: translateY(-5px); }
+        .timer-val { font-family: 'Courier New', Courier, monospace; font-weight: bold; font-size: 1.2rem; color: #dc3545; }
+        .speed-info { font-size: 0.85rem; color: #6c757d; }
+        .header-bg { background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%); color: white; padding: 40px 0; margin-bottom: 30px; border-radius: 0 0 50px 50px; }
+    </style>
+</head>
+<body>
+
+<div class="header-bg text-center">
+    <h1>Segurança Digital: Senha tem que ser grande mesmo?</h1>
+    <p>Quanto tempo um computador levaria para descobrir sua senha?</p>
+</div>
+
+<div class="container">
+    <div class="row g-4">
+        <div class="col-md-4">
+            <div class="card h-100 p-4">
+                <h3 class="text-primary">Nível 1</h3>
+                <p class="text-muted">Apenas Números (0-9)<br><small>Conjunto: 10 caracteres</small></p>
+                <input type="password" id="pass1" class="form-control mb-3" placeholder="Ex: 123456" maxlength="8">
+                <button onclick="startCrack(1)" class="btn btn-outline-primary w-100">Testar Velocidade</button>
+                <div id="result1" class="mt-4 border-top pt-3 d-none">
+                    <p>Status: <span class="badge bg-warning text-dark" id="status1">Quebrando...</span></p>
+                    <p>Tempo: <span class="timer-val" id="time1">0.000s</span></p>
+                    <p class="speed-info" id="stats1"></p>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card h-100 p-4 border-primary" style="border-width: 2px;">
+                <h3 class="text-success">Nível 2</h3>
+                <p class="text-muted">Letras e Números (a-z, A-Z, 0-9)<br><small>Conjunto: 62 caracteres</small></p>
+                <input type="password" id="pass2" class="form-control mb-3" placeholder="Ex: Senha123" maxlength="8">
+                <button onclick="startCrack(2)" class="btn btn-success w-100">Testar Velocidade</button>
+                <div id="result2" class="mt-4 border-top pt-3 d-none">
+                    <p>Status: <span class="badge bg-warning text-dark" id="status2">Quebrando...</span></p>
+                    <p>Tempo: <span class="timer-val" id="time2">0.000s</span></p>
+                    <p class="speed-info" id="stats2"></p>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card h-100 p-4 shadow-lg">
+                <h3 class="text-danger">Nível 3</h3>
+                <p class="text-muted">Letras, Números e Especiais<br><small>Conjunto: ~95 caracteres</small></p>
+                <input type="password" id="pass3" class="form-control mb-3" placeholder="Ex: S3nh@!#1" maxlength="8">
+                <button onclick="startCrack(3)" class="btn btn-danger w-100">Testar Velocidade</button>
+                <div id="result3" class="mt-4 border-top pt-3 d-none">
+                    <p>Status: <span class="badge bg-warning text-dark" id="status3">Quebrando...</span></p>
+                    <p>Tempo: <span class="timer-val" id="time3">0.000s</span></p>
+                    <p class="speed-info" id="stats3"></p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <footer class="text-center mt-5 pb-4 text-muted">
+        <small>Riofer - Setor de tecnologia</small>
+    </footer>
+</div>
+
+<script>
+function startCrack(id) {
+    const input = document.getElementById('pass' + id);
+    const senha = input.value;
+    if (!senha) return alert("Digite uma senha para testar!");
+
+    const resultDiv = document.getElementById('result' + id);
+    const statusSpan = document.getElementById('status' + id);
+    const timeSpan = document.getElementById('time' + id);
+    const statsSpan = document.getElementById('stats' + id);
+
+    resultDiv.classList.remove('d-none');
+    statusSpan.className = "badge bg-warning text-dark";
+    statusSpan.innerText = "Quebrando...";
+    
+    const TENTATIVAS_POR_SEGUNDO = 10000000; 
+    
+    let conjuntoTamanho = 0;
+    if (id === 1) conjuntoTamanho = 10; // 0-9
+    if (id === 2) conjuntoTamanho = 62; // a-z, A-Z, 0-9
+    if (id === 3) conjuntoTamanho = 95; // Todos os imprimíveis
+
+    let totalCombinacoes = Math.pow(conjuntoTamanho, senha.length);
+    let tempoEstimadoSegundos = totalCombinacoes / TENTATIVAS_POR_SEGUNDO;
+
+    let inicio = performance.now();
+    
+    let timerInterval = setInterval(() => {
+        let agora = performance.now();
+        let decorrido = (agora - inicio) / 1000;
+
+        if (decorrido >= tempoEstimadoSegundos) {
+            clearInterval(timerInterval);
+            timeSpan.innerText = formatTime(tempoEstimadoSegundos);
+            statusSpan.className = "badge bg-success";
+            statusSpan.innerText = "SENHA QUEBRADA!";
+            statsSpan.innerText = "Total de combinações testadas: " + totalCombinacoes.toLocaleString();
+        } else {
+            timeSpan.innerText = decorrido.toFixed(3) + "s";
+        }
+    }, 50);
+}
+
+function formatTime(seconds) {
+    if (seconds < 1) return seconds.toFixed(4) + "s";
+    if (seconds < 60) return seconds.toFixed(2) + "s";
+    let mins = seconds / 60;
+    if (mins < 60) return mins.toFixed(2) + " min";
+    let horas = mins / 60;
+    if (horas < 24) return horas.toFixed(2) + " horas";
+    let dias = horas / 24;
+    return dias.toFixed(2) + " dias";
+}
+</script>
+
+</body>
+</html>

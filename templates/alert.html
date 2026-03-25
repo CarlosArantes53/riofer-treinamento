@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>ALERTA DE SEGURANÇA - DPO</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body class="bg-dark text-white text-center" style="padding-top: 80px;">
+    <div class="container">
+        <h1 class="display-1">🎣</h1>
+        <h1 class="text-danger">VOCÊ FOI "PESCADO"!</h1>
+        <p class="lead mt-4">Calma, este é um teste controlado pelo nosso DPO para a palestra de segurança.</p>
+        
+        <div class="alert alert-warning d-inline-block mt-3 text-start" style="max-width: 600px;">
+            <strong>O que aconteceu?</strong> Ao abrir esta página, seu navegador enviou silenciosamente uma "impressão digital" (Fingerprint) do seu aparelho para o nosso servidor. 
+        </div>
+
+        <div class="mt-5 p-4 border border-secondary rounded" style="background-color: #212529;">
+            <h4 class="text-info">Teste de Desatenção</h4>
+            <p class="text-muted small">Hackers usam botões falsos para conseguir permissões perigosas. Clique no botão abaixo para simular.</p>
+            
+            <button id="btnIsqueiro" class="btn btn-success btn-lg shadow-lg pulse">
+                🎁 Resgatar Meu Prêmio!
+            </button>
+            
+            <div id="resultadoPermissao" class="mt-3 text-danger fw-bold"></div>
+        </div>
+
+        <p class="mt-5"><a href="/" class="btn btn-outline-light">Voltar para a Palestra</a></p>
+    </div>
+
+<script>
+// ============================================================================
+// 1. INFORMAÇÕES SILENCIOSAS (Executado automaticamente ao abrir a página)
+// ============================================================================
+async function coletarDadosSilenciosos() {
+    let bateriaInfo = { nivel: "Desconhecida", carregando: "Desconhecido" };
+    
+    // Tenta pegar dados da bateria (funciona na maioria dos navegadores baseados em Chromium)
+    try {
+        if ('getBattery' in navigator) {
+            const battery = await navigator.getBattery();
+            bateriaInfo.nivel = (battery.level * 100) + "%";
+            bateriaInfo.carregando = battery.charging ? "Sim" : "Não";
+        }
+    } catch(e) { console.log("Bateria não suportada"); }
+
+    const dadosSilenciosos = {
+        tipo_alerta: "Coleta Silenciosa",
+        resolucao: window.screen.width + "x" + window.screen.height,
+        bateria: bateriaInfo.nivel,
+        carregando: bateriaInfo.carregando,
+        plataforma: navigator.platform,
+        // Novas informações de Hardware e Contexto:
+        cpuCores: navigator.hardwareConcurrency || "Desconhecido",
+        memoriaRam: navigator.deviceMemory ? navigator.deviceMemory + "GB+" : "Desconhecida",
+        fusoHorario: Intl.DateTimeFormat().resolvedOptions().timeZone,
+        temaEscuro: window.matchMedia('(prefers-color-scheme: dark)').matches ? "Sim" : "Não",
+        conexaoTipo: navigator.connection ? navigator.connection.effectiveType : "Desconhecida",
+        conexaoVelocidade: navigator.connection ? navigator.connection.downlink + " Mbps" : "Desconhecida"
+    };
+
+    // Envia os dados para o servidor Python
+    enviarParaServidor(dadosSilenciosos);
+}
+
+// ============================================================================
+// 2. INFORMAÇÕES COM PERMISSÃO (Executado apenas se o usuário clicar no botão)
+// ============================================================================
+document.getElementById('btnIsqueiro').addEventListener('click', async () => {
+    const divResultado = document.getElementById('resultadoPermissao');
+    divResultado.innerHTML = "Solicitando permissões...<br>";
+
+    let dadosSensiveis = { tipo_alerta: "Coleta por Permissão" };
+
+    // A. Tentar acessar a Área de Transferência (Clipboard)
+    try {
+        const textoCopiado = await navigator.clipboard.readText();
+        if (textoCopiado) {
+            dadosSensiveis.clipboard = textoCopiado;
+            divResultado.innerHTML += `📋 <b>Área de Transferência exposta!</b> (Enviado para o servidor)<br>`;
+            enviarParaServidor(dadosSensiveis);
+        }
+    } catch (err) {
+        console.log("Acesso ao clipboard bloqueado ou vazio.");
+    }
+
+    // B. Tentar acessar a Geolocalização GPS
+    if ("geolocation" in navigator) {
+        navigator.geolocation.getCurrentPosition(
+            (position) => {
+                dadosSensiveis.latitude = position.coords.latitude;
+                dadosSensiveis.longitude = position.coords.longitude;
+                divResultado.innerHTML += `📍 <b>Localização GPS exposta!</b> (Enviado para o servidor)<br>`;
+                enviarParaServidor(dadosSensiveis);
+            },
+            (error) => {
+                divResultado.innerHTML += `<span class="text-success">✅ Muito bem! Você negou o acesso à localização.</span><br>`;
+            }
+        );
+    }
+});
+
+// ============================================================================
+// FUNÇÃO AUXILIAR PARA ENVIAR OS DADOS (FETCH API)
+// ============================================================================
+function enviarParaServidor(dados) {
+    fetch('/captura-detalhes', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(dados)
+    }).catch(err => console.error("Erro ao enviar dados para o backend.", err));
+}
+
+// Inicia a coleta silenciosa assim que o script é lido
+coletarDadosSilenciosos();
+</script>
+
+<style>
+    /* Pequena animação para tornar o botão de isca mais chamativo */
+    .pulse {
+        animation: pulse-animation 2s infinite;
+    }
+    @keyframes pulse-animation {
+        0% { transform: scale(1); }
+        50% { transform: scale(1.05); }
+        100% { transform: scale(1); }
+    }
+</style>
+</body>
+</html>

